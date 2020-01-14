@@ -1,11 +1,16 @@
 ---
-title: "Ebola Outbreak in Uganda"
+title: "Situational report on the Ebola Virus Disease (EVD) outbreak in southwest Uganda"
 author: "Roxanne Beauclair and Ivy Kombe"
 date: "`r lubridate::today()`"
-output: html_document
+output:
+  html_document:
+    highlight: tango
+    theme: lumen
+    toc: yes
+    toc_depth: 5
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
 # ============
 # Set options
 # ===========
@@ -15,9 +20,10 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(echo = FALSE)
 
 options(table_counter = TRUE)
+options(table_counter_str = "<b>Table %s:</b> ")
 
 # ===================
-# Relative file paths
+# File paths
 # ===================
 wd <- "/Users/roxannebeauclair/Dropbox/Work/Work for SACEMA-Juliet/Rapid Response Team/Challenge Assignment/Analysis"
 rdata <- paste0(wd, "/Data/Raw") 
@@ -30,7 +36,9 @@ updatedf <- paste0(cdata, "/Updated_ebola.rda")
 # Loading dependencies
 # ====================
 library(tidyverse)
-library(incidence)
+library(lubridate)
+library(janitor)
+library(htmlTable)
 
 # =============
 # Load datasets
@@ -38,3 +46,238 @@ library(incidence)
 load(updatedf)
 ```
 
+# **Overview**
+
+<br>
+<br>
+
+```{r hightlighs_setup, include = FALSE}
+
+total_cases <- nrow(ebola_df)
+earliest_date <- min(ebola_df$onsetDate) %>% format(format = "%d %b, %Y")
+latest_date <- max(ebola_df$onsetDate) %>% format(format = "%d %b, %Y")
+
+count_status <- ebola_df %>%
+  count(status)
+
+```
+
+This report contains information about the baseline EVD situation in Uganda. The results from this report are based upon the best information that is currently available. As more data is collected, the report will be updated. Over a period of three months, from `r earliest_date` to `r latest_date`, there have been `r total_cases` reported cases of EVD from a community of 400 people.  Of the `r total_cases` reported cases, `r count_status$n[1]` were confirmed, `r count_status$n[2]` were probable,  and `r count_status$n[3]` suspected. 
+
+<br>
+
+# **Visualisation and summary statistics**
+
+<br>
+<br>
+
+##  Epidemiologic Curves
+
+<br>
+<br>
+
+```{r epicurve_setup, include = FALSE}
+
+# Create a summary tables/dataset which summarises:
+# 1. The number of rows for each isoweek 
+# 2. The number of rows for each isoweek and status combination
+# 3. The number of rows for each isoweek and outcome combination
+
+# 1.
+week_summary <- ebola_df %>%
+  group_by(week) %>% # Group the dataset
+  summarise(n_total = n()) %>% # Total number of rows for each week 
+  ungroup() %>% # Remove groupings from the summary datset
+  complete(week = 1:52, fill = list(n_total = 0)) %>%  # Turn implicit missing values into explicit missings
+  mutate(cum_cases = cumsum(n_total))
+
+  
+# 2. 
+week_status_summary <- ebola_df %>%
+  group_by(week, status) %>%
+  summarise(n_status = n()) %>%
+  ungroup() %>%
+  complete(week = 1:52, status, fill = (list(n_status = 0))) %>%
+  group_by(status) %>%
+  mutate(cum_cases = cumsum(n_status))
+
+# 3. 
+week_outcome_summary <- ebola_df %>%
+  group_by(week, outcome) %>%
+  summarise(n_outcome = n()) %>%
+  ungroup() %>%
+  complete(week = 1:52, outcome,  fill = (list(n_outcome = 0))) %>%
+  group_by(outcome) %>%
+  mutate(cum_cases = cumsum(n_outcome))
+
+```
+
+```{r epicurve_overall}
+
+curve_total <- week_summary %>%
+  ggplot(aes(x = week)) +
+  geom_col(aes(y = n_total), 
+           fill = "lightseagreen",
+           color = "white") +
+  labs(x = "Epidemiological Week 2019",
+       y = "Number of Cases") +
+  theme_bw() 
+
+curve_total
+
+```
+
+ <br>
+ 
+```{r epicumcurve_overall}
+
+curve_cum <- week_summary%>%
+  ggplot(aes(x = week, y = cum_cases)) +
+  geom_point() +
+  geom_line(color = "lightseagreen") +
+  labs(x = "Epidemiological Week 2019",
+       y = "Cumulative Number of Cases") +
+  theme_bw() 
+
+curve_cum
+
+```
+ 
+ 
+```{r epicurve_status}
+
+curve_status <- week_status_summary %>%
+  ggplot(aes(x = week)) +
+  geom_col(aes(y = n_status, fill = status)) +
+  labs(x = "Epidemiological Week 2019",
+       y = "Number of Cases",
+       fill = "Case Definitions") +
+  scale_fill_viridis_d() +
+  theme_bw() 
+
+curve_status
+```
+ 
+<br>
+ 
+```{r epicumcurve_status}
+
+curve_status_cum <- week_status_summary %>%
+  ggplot(aes(x = week, y = cum_cases, color = status)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Epidemiological Week 2019",
+       y = "Cumulative Number of Cases",
+       color = "Case Definition") +
+  scale_color_viridis_d() +
+  theme_bw() 
+
+curve_status_cum
+
+```
+<br>
+
+ 
+```{r epicurve_outcome}
+curve_outcome <- week_outcome_summary %>%
+  ggplot(aes(x = week)) +
+  geom_col(aes(y = n_outcome, fill = outcome)) +
+  labs(x = "Epidemiological Week 2019",
+       y = "Number of Cases",
+       fill = "Outcome") +
+  scale_fill_viridis_d() +
+  theme_bw() 
+
+curve_outcome
+```
+
+<br>
+
+```{r epicumcurve_outcome}
+
+curve_outcome_cum <- week_outcome_summary %>%
+  ggplot(aes(x = week, y = cum_cases, color = outcome)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Epidemiological Week 2019",
+       y = "Cumulative Number of Cases",
+       color = "Outcome") +
+  scale_color_viridis_d() +
+  theme_bw() 
+
+curve_outcome_cum
+
+```
+
+## Case Fatality 
+ 
+```{r cfr_setup, include = FALSE}
+
+# Create summary data that 
+# 1. Counts the cases by case definition
+# 2. Counts the deaths by case definition
+# 3. Calculates the case fatality ratio by case definition
+
+cases <- ebola_df %>%
+ count(status)
+  
+cases
+
+deaths <- ebola_df %>%
+  count(status, outcome, name = "n_deaths") %>%
+  filter(outcome == "Died") %>%
+  select(-outcome)
+  
+deaths
+
+cfrs <- cases %>%
+  left_join(deaths, by = "status") %>%
+  mutate(cfr = format(round((n_deaths / n) * 100, 1), nsmall = 1))
+
+overall_deaths <- sum(deaths$n_deaths) 
+overall_cf <- overall_cf <- round((overall_deaths / total_cases) * 100, 1)
+```
+
+```{r cfr_table}
+
+cfrs %>%
+  htmlTable(ctable = TRUE,
+            header = c("&nbsp;&nbsp; Case Definition &nbsp;&nbsp;", 
+                       "&nbsp;&nbsp; Cases &nbsp;&nbsp;", 
+                       "&nbsp;&nbsp; Deaths &nbsp;&nbsp;", 
+                       "&nbsp;&nbsp; Case Fatality Ratio (%) &nbsp;&nbsp;"),
+            rnames = FALSE,
+            caption = "<b>Case Fatality Ratios (CFR) by case definition<b>",
+            align = "l|rrr",
+            css.cell = "padding-left: .5em; padding-right: .5em;")
+
+```
+
+<br>
+
+Overall, there were  `r overall_deaths` (`r overall_cf` %) deaths in the population. Table 1 presents CRFs by case definition. Cases that were classified as probable had the highest CRF, with 100% of cases dying. 
+
+<br>
+
+## Growth Curve and Basic Reproduction Number
+
+<br>
+<br>
+ 
+# **Going Forward**
+<br>
+<br>
+ 
+# **Additional data types and justification**
+ 
+<br>
+ 
+In addition to the information provided in the data, we believe that information on the household size and patient demographics, in particular age and sex would be useful.
+
+<br>
+
+*Household size* <br>
+Though there are several cases that came from the same household, it is unknown what the size of each affected household is. Knowledge of the total occupancy of the affected household would help in quantifying how transmissible the virus is within the household. This is an important transmission setting for diseases that are spread through close contact. The within household transmissibility will determine a time window within which household contacts are to be identified if infection is to be prevented. 
+
+*Patient demographics (age and sex)* <br>
+Knowledge of case characteristics will help to identify at risk groups in the community and therefore specific immediate targets for intervention. Further analysis could also identify if certain groups are more likely to transmit to others once infected, information which will also contribute to infection control. 
