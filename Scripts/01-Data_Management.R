@@ -44,11 +44,13 @@ ebola_df1 <- ebola_df %>%
   mutate(week = isoweek(onsetDate),
          outcome = factor(ifelse(is.na(deathDate), 
                                  "Recovered",
-                                 "Died")))
+                                 "Died")),
+         status = str_to_title(status)) # Capitalize first letter
 
 # ==============
 # Save dataset
 # ==============
+ebola_df <- ebola_df1
 
 save(ebola_df, file = updatedf)
 
