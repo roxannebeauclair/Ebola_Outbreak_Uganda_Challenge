@@ -36,6 +36,15 @@ ebola_df <- read_csv(file = data)
 
 glimpse(ebola_df)
 
+# ====================
+# Create new variables
+# ====================
+
+ebola_df1 <- ebola_df %>%
+  mutate(week = isoweek(onsetDate),
+         outcome = factor(ifelse(is.na(deathDate), 
+                                 "Recovered",
+                                 "Died")))
 
 # ==============
 # Save dataset
