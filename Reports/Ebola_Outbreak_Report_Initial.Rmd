@@ -1,0 +1,40 @@
+---
+title: "Ebola Outbreak in Uganda"
+author: "Roxanne Beauclair and Ivy Kombe"
+date: "`r lubridate::today()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# ============
+# Set options
+# ===========
+
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(echo = FALSE)
+
+options(table_counter = TRUE)
+
+# ===================
+# Relative file paths
+# ===================
+wd <- "/Users/roxannebeauclair/Dropbox/Work/Work for SACEMA-Juliet/Rapid Response Team/Challenge Assignment/Analysis"
+rdata <- paste0(wd, "/Data/Raw") 
+cdata <- paste0(wd, "/Data/Cleaned")
+
+updatedf <- paste0(cdata, "/Updated_ebola.rda")
+
+
+# ====================
+# Loading dependencies
+# ====================
+library(tidyverse)
+library(incidence)
+
+# =============
+# Load datasets
+# =============
+load(updatedf)
+```
+
