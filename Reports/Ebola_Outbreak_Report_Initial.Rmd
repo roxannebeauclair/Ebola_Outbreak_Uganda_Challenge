@@ -25,7 +25,8 @@ options(table_counter_str = "<b>Table %s:</b> ")
 # ===================
 # File paths
 # ===================
-wd <- "/Users/roxannebeauclair/Dropbox/Work/Work for SACEMA-Juliet/Rapid Response Team/Challenge Assignment/Analysis"
+#wd <- "/Users/roxannebeauclair/Dropbox/Work/Work for SACEMA-Juliet/Rapid Response Team/Challenge Assignment/Analysis"
+wd <- "../../../GitHub/Ebola_Outbreak_Uganda_Challenge/"
 rdata <- paste0(wd, "/Data/Raw") 
 cdata <- paste0(wd, "/Data/Cleaned")
 
@@ -67,6 +68,8 @@ This report contains information about the baseline EVD situation in Uganda. The
 <br>
 
 # **Visualisation and summary statistics**
+<br>
+The following figures show the time trend in cases as observed from the data.
 
 <br>
 <br>
@@ -111,6 +114,7 @@ week_outcome_summary <- ebola_df %>%
   mutate(cum_cases = cumsum(n_outcome))
 
 ```
+<br>
 
 ```{r epicurve_overall}
 
@@ -126,9 +130,11 @@ curve_total <- week_summary %>%
 curve_total
 
 ```
+<br>
+**Figure 1: The total number of reported cases by week of the year**
 
- <br>
- 
+<br>
+<br> 
 ```{r epicumcurve_overall}
 
 curve_cum <- week_summary%>%
@@ -142,8 +148,10 @@ curve_cum <- week_summary%>%
 curve_cum
 
 ```
- 
- 
+<br>
+**Figure 2: Cummulative case counts by week of the year**
+<br>
+<br> 
 ```{r epicurve_status}
 
 curve_status <- week_status_summary %>%
@@ -157,9 +165,11 @@ curve_status <- week_status_summary %>%
 
 curve_status
 ```
- 
 <br>
- 
+
+**Figure 3: The total number of reported cases by week of the year clustered by case definition**
+<br>
+<br> 
 ```{r epicumcurve_status}
 
 curve_status_cum <- week_status_summary %>%
@@ -177,6 +187,9 @@ curve_status_cum
 ```
 <br>
 
+**Figure 4: Cummulative case counts by week of the year clustered by case definition**
+<br>
+<br>
  
 ```{r epicurve_outcome}
 curve_outcome <- week_outcome_summary %>%
@@ -191,6 +204,9 @@ curve_outcome <- week_outcome_summary %>%
 curve_outcome
 ```
 
+<br>
+**Figure 5: The total number of reported cases by week of the year clustered by case outcome**
+<br>
 <br>
 
 ```{r epicumcurve_outcome}
@@ -208,6 +224,10 @@ curve_outcome_cum <- week_outcome_summary %>%
 curve_outcome_cum
 
 ```
+<br>
+**Figure 6: Cummulative case counts by week of the year clustered by case outcome**
+<br>
+<br>
 
 ## Case Fatality 
  
@@ -260,24 +280,112 @@ Overall, there were  `r overall_deaths` (`r overall_cf` %) deaths in the populat
 <br>
 
 ## Growth Curve and Basic Reproduction Number
+An exponential growth curve was fitted to the weekly incidence data and estimates
+of the reproductive number were derived. The basic reproductive number, denoted Ro, is a measure
+of the infectivity of a single case in a completely susceptible population and it
+can be used to predict if an outbreak will occur. The reproductive number, denoted 
+R(t) is a measure of infectivity of a single case in a population where some
+members have already been exposed to infection. 
+
+<br>
+```{r epi_analysis1}
+# - Fitting the incidence curve
+library('incidence');library('ggplot2');library('magrittr')
+ebola.incidence=incidence(ebola_df$onsetDate,interval = 'weeks',standard = F)
+# Fitting
+ebola.incidence.fit=fit(ebola.incidence)
+my_theme <- theme_bw(base_size = 12) +
+  theme(panel.grid.minor = element_blank()) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, color = "black"))
+plot(ebola.incidence, ylab='Weekly incidence',border = "white") %>% 
+  add_incidence_fit(ebola.incidence.fit) +
+  labs(title='Weekly incidence from data and model fit') + 
+  my_theme
+```
+<br>
+**Figure 7: Weekly incidence over the 3-month reporting period.** The grey bars show the reported
+data while the lines show the model predictions and 95% confidence intervals(dashed lines)
+
+<br>
+
+The estimated daily growth rate is `r ebola.incidence.fit$info$r` (`r ebola.incidence.fit$info$r.conf[1]`, 
+`r ebola.incidence.fit$info$r.conf[2]`). The stimated time it would take for the epidemic
+to double in size is `r signif(ebola.incidence.fit$info$doubling,3)` (`r signif(ebola.incidence.fit$info$doubling.conf[1],3)`, 
+`r signif(ebola.incidence.fit$info$doubling.conf[2],3)`) days. 
+
+```{r epi_analysis2}
+# - Compute Ro and R(t)
+library('R0')
+weeks.strt=seq(1,98,7)
+weeks.end=seq(7,98,7)
+week.date=seq(min(ebola_df$onsetDate),max(ebola_df$onsetDate),7)
+
+# Ro
+ebola.GT<-generation.time("gamma", c(15.3,9.3))
+temp=table(ebola_df$onsetDate)
+ebola.inc=as.numeric(temp);names(ebola.inc)=names(temp);rm(temp)
+estR0<-estimate.R(ebola.inc, ebola.GT,methods=c("EG"))
+# R(t)
+estRt<-estimate.R(ebola.inc, ebola.GT,methods=c("TD"),begin=1, end=98, nsim=100)
+estRt.weekly <-smooth.Rt(estRt$estimates$TD, 7)
+
+plot.estRt.weekly=data.frame(date=week.date,
+                             est=estRt.weekly$R,lwr=estRt.weekly$conf.int[,1],
+                             upr=estRt.weekly$conf.int[,2])
+ggplot(plot.estRt.weekly,aes(x = date,y = est)) + geom_line(size=1) +
+  labs(title='Estimated weekly reproductive number and confidence intervals',x="Time",y = "R(t)") + my_theme + 
+geom_line(aes(x= date,y = lwr), color = "red", linetype = "dotted",size=1) +
+  geom_line(aes(x= date,y = upr), color = "red", linetype = "dotted",size=1) +
+  geom_hline(yintercept=1, linetype="dashed", color = "grey", size=1)
+
+```
+<br>
+
+**Figure 8: Estimates of the weekly reproductive number over time.** The black line shows the 
+median estimate while the dotted red lines show the 95% confidence interval. The 
+dashed grey line shows 1.
+
+<br>
+
+The reproductive number over time shown in the previous figure is consistently estimated 
+to be above 1 up until the last week. However, this dip in the last week should be interpreted
+with caution as the confidence interval is very wide. The basic reproductive number
+was estimated at `r signif(estR0$estimates$EG$R,3)`(`r signif(estR0$estimates$EG$conf.int[1],3)`,
+`r signif(estR0$estimates$EG$conf.int[2],3)`)
+<br>
+<br>
+
+## Waiting time between symptom onset and case reporting
+<br>
+The time between when symptoms begin and when a case is reported might change as 
+the outbreak progresses, which might be an indicator of community awareness. The
+average weekly waiting time is plotted against epidemic week in the figure below.
+<br>
+<br>
+```{r epi_analysis3}
+# - Time between onset and reporting
+waiting.period=data.frame(day=as.numeric(ebola_df$reportDate-min(ebola_df$reportDate)+1),
+                          wait=as.numeric(ebola_df$reportDate-ebola_df$onsetDate))
+# Average weekly waiting period
+weekly.waiting.period=data.frame(start=week.date,ave.wait=0)
+for(w in 1:length(week.date)){
+  x=which((waiting.period$day>=weeks.strt[w]) & (waiting.period$day<=weeks.end[w]))
+  weekly.waiting.period$ave.wait[w]=sum(waiting.period$wait[x])/length(x)
+}
+ggplot(weekly.waiting.period,aes(x = start,y = ave.wait)) + geom_line() +
+  labs(title='Average weekly waiting period between onset and reporting',x="Time", 
+       y = "Average waiting period in days") + my_theme
+
+```
+<br>
+**Figure 9: Average weekly waiting time.**
+<br>
+<br>
+The time it takes for a case to be reported given symptom onset does not seem to 
+change much over the course of the outbreak thus far. However, this could be dependent on
+the definition of symptoms, additional data would be need to better capture changing
+behavioural dynamics. 
 
 <br>
 <br>
- 
-# **Going Forward**
-<br>
-<br>
- 
-# **Additional data types and justification**
- 
-<br>
- 
-In addition to the information provided in the data, we believe that information on the household size and patient demographics, in particular age and sex would be useful.
 
-<br>
-
-*Household size* <br>
-Though there are several cases that came from the same household, it is unknown what the size of each affected household is. Knowledge of the total occupancy of the affected household would help in quantifying how transmissible the virus is within the household. This is an important transmission setting for diseases that are spread through close contact. The within household transmissibility will determine a time window within which household contacts are to be identified if infection is to be prevented. 
-
-*Patient demographics (age and sex)* <br>
-Knowledge of case characteristics will help to identify at risk groups in the community and therefore specific immediate targets for intervention. Further analysis could also identify if certain groups are more likely to transmit to others once infected, information which will also contribute to infection control. 
