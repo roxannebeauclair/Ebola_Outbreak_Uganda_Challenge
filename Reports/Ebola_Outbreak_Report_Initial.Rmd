@@ -25,8 +25,8 @@ options(table_counter_str = "<b>Table %s:</b> ")
 # ===================
 # File paths
 # ===================
-#wd <- "/Users/roxannebeauclair/Dropbox/Work/Work for SACEMA-Juliet/Rapid Response Team/Challenge Assignment/Analysis"
-wd <- "../../../GitHub/Ebola_Outbreak_Uganda_Challenge/"
+wd <- "/Users/roxannebeauclair/Dropbox/Work/Work for SACEMA-Juliet/Rapid Response Team/Challenge Assignment/Analysis"
+# wd <- "../../../GitHub/Ebola_Outbreak_Uganda_Challenge/"
 rdata <- paste0(wd, "/Data/Raw") 
 cdata <- paste0(wd, "/Data/Cleaned")
 
@@ -36,10 +36,12 @@ updatedf <- paste0(cdata, "/Updated_ebola.rda")
 # ====================
 # Loading dependencies
 # ====================
+library(R0)
 library(tidyverse)
 library(lubridate)
 library(janitor)
 library(htmlTable)
+
 
 # =============
 # Load datasets
@@ -52,7 +54,7 @@ load(updatedf)
 <br>
 <br>
 
-```{r hightlighs_setup, include = FALSE}
+```{r hightlights_setup, include = FALSE}
 
 total_cases <- nrow(ebola_df)
 earliest_date <- min(ebola_df$onsetDate) %>% format(format = "%d %b, %Y")
@@ -69,7 +71,8 @@ This report contains information about the baseline EVD situation in Uganda. The
 
 # **Visualisation and summary statistics**
 <br>
-The following figures show the time trend in cases as observed from the data.
+
+The following figures show the weekly incidence over the 2019 calendar year. 
 
 <br>
 <br>
@@ -114,44 +117,40 @@ week_outcome_summary <- ebola_df %>%
   mutate(cum_cases = cumsum(n_outcome))
 
 ```
+
 <br>
 
 ```{r epicurve_overall}
 
-curve_total <- week_summary %>%
-  ggplot(aes(x = week)) +
-  geom_col(aes(y = n_total), 
-           fill = "lightseagreen",
-           color = "white") +
-  labs(x = "Epidemiological Week 2019",
-       y = "Number of Cases") +
-  theme_bw() 
-
-curve_total
+# curve_total <- week_summary %>%
+#   ggplot(aes(x = week)) +
+#   geom_col(aes(y = n_total), 
+#            fill = "lightseagreen",
+#            color = "white") +
+#   labs(x = "Epidemiological Week 2019",
+#        y = "Number of Cases") +
+#   theme_bw() 
+# 
+# curve_total
 
 ```
-<br>
-**Figure 1: The total number of reported cases by week of the year**
 
-<br>
-<br> 
+
 ```{r epicumcurve_overall}
 
-curve_cum <- week_summary%>%
-  ggplot(aes(x = week, y = cum_cases)) +
-  geom_point() +
-  geom_line(color = "lightseagreen") +
-  labs(x = "Epidemiological Week 2019",
-       y = "Cumulative Number of Cases") +
-  theme_bw() 
-
-curve_cum
+# curve_cum <- week_summary %>%
+#   ggplot(aes(x = week, y = cum_cases)) +
+#   geom_point() +
+#   geom_line(color = "lightseagreen") +
+#   labs(x = "Epidemiological Week 2019",
+#        y = "Cumulative Number of Cases") +
+#   theme_bw() 
+# 
+# curve_cum
 
 ```
-<br>
-**Figure 2: Cummulative case counts by week of the year**
-<br>
-<br> 
+
+
 ```{r epicurve_status}
 
 curve_status <- week_status_summary %>%
@@ -165,31 +164,14 @@ curve_status <- week_status_summary %>%
 
 curve_status
 ```
+
 <br>
 
-**Figure 3: The total number of reported cases by week of the year clustered by case definition**
+**Figure 2: The total number of reported cases by week of the year clustered by case definition**
+
 <br>
 <br> 
-```{r epicumcurve_status}
 
-curve_status_cum <- week_status_summary %>%
-  ggplot(aes(x = week, y = cum_cases, color = status)) +
-  geom_point() +
-  geom_line() +
-  labs(x = "Epidemiological Week 2019",
-       y = "Cumulative Number of Cases",
-       color = "Case Definition") +
-  scale_color_viridis_d() +
-  theme_bw() 
-
-curve_status_cum
-
-```
-<br>
-
-**Figure 4: Cummulative case counts by week of the year clustered by case definition**
-<br>
-<br>
  
 ```{r epicurve_outcome}
 curve_outcome <- week_outcome_summary %>%
@@ -205,29 +187,12 @@ curve_outcome
 ```
 
 <br>
-**Figure 5: The total number of reported cases by week of the year clustered by case outcome**
+
+**Figure 3: The total number of reported cases by week of the year clustered by case outcome**
+
 <br>
 <br>
 
-```{r epicumcurve_outcome}
-
-curve_outcome_cum <- week_outcome_summary %>%
-  ggplot(aes(x = week, y = cum_cases, color = outcome)) +
-  geom_point() +
-  geom_line() +
-  labs(x = "Epidemiological Week 2019",
-       y = "Cumulative Number of Cases",
-       color = "Outcome") +
-  scale_color_viridis_d() +
-  theme_bw() 
-
-curve_outcome_cum
-
-```
-<br>
-**Figure 6: Cummulative case counts by week of the year clustered by case outcome**
-<br>
-<br>
 
 ## Case Fatality 
  
@@ -252,7 +217,7 @@ deaths
 
 cfrs <- cases %>%
   left_join(deaths, by = "status") %>%
-  mutate(cfr = format(round((n_deaths / n) * 100, 1), nsmall = 1))
+  mutate(cfr = format(round((n_deaths / n) * 100, 1), nsmall = 1)) 
 
 overall_deaths <- sum(deaths$n_deaths) 
 overall_cf <- overall_cf <- round((overall_deaths / total_cases) * 100, 1)
@@ -288,6 +253,7 @@ R(t) is a measure of infectivity of a single case in a population where some
 members have already been exposed to infection. 
 
 <br>
+
 ```{r epi_analysis1}
 # - Fitting the incidence curve
 library('incidence');library('ggplot2');library('magrittr')
@@ -302,7 +268,9 @@ plot(ebola.incidence, ylab='Weekly incidence',border = "white") %>%
   labs(title='Weekly incidence from data and model fit') + 
   my_theme
 ```
+
 <br>
+
 **Figure 7: Weekly incidence over the 3-month reporting period.** The grey bars show the reported
 data while the lines show the model predictions and 95% confidence intervals(dashed lines)
 
@@ -315,7 +283,7 @@ to double in size is `r signif(ebola.incidence.fit$info$doubling,3)` (`r signif(
 
 ```{r epi_analysis2}
 # - Compute Ro and R(t)
-library('R0')
+
 weeks.strt=seq(1,98,7)
 weeks.end=seq(7,98,7)
 week.date=seq(min(ebola_df$onsetDate),max(ebola_df$onsetDate),7)
