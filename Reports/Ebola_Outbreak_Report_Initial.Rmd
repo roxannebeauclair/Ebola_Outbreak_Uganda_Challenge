@@ -280,7 +280,7 @@ cfrs %>%
 
 <br>
 
-Overall, there were  `r overall_deaths` (`r overall_cf` %) deaths in the population. Table 1 presents CRFs by case definition. Cases that were classified as probable had the highest CRF, with 100% of cases dying. 
+Overall, there were  `r overall_deaths` (`r overall_cf` %) deaths in the population. Table 1 presents CFRs by case definition and gender. Cases that were classified as probable had the highest CRF, with 100% of cases dying. The CFR for confirmed cases was `r cfrs$cfr_total[1]`%, while the CFR for suspected cases was `r cfrs$cfr_total[3]`%. All suspected cases happened in the previous three weeks and thus they were probably still ill rather than fully recovered. The CFRs disagreggated by gender do not look much different from the overall CFRs. 
 
 <br>
 
