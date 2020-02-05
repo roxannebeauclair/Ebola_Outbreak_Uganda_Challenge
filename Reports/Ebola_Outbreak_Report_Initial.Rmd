@@ -102,7 +102,7 @@ The following figures show the weekly incidence over the 2019 calendar year. The
 # Create a summary tables/dataset which summarises:
 # 1. The number of rows for each isoweek 
 # 2. The number of rows for each isoweek and status combination
-# 3. The number of rows for each isoweek and outcome combination
+# 3. The number of rows for each isoweek and gender combination
 
 # 1.
 # week_summary <- ebola_df %>%
@@ -113,7 +113,7 @@ The following figures show the weekly incidence over the 2019 calendar year. The
 #   mutate(cum_cases = cumsum(n_total))
 
   
-# # 2. 
+# 2. 
 week_status_summary <- ebola_df %>%
   group_by(onsetDate, status) %>%
   summarise(n_status = n()) %>%
@@ -122,14 +122,16 @@ week_status_summary <- ebola_df %>%
 #   group_by(status) %>%
 #   mutate(cum_cases = cumsum(n_status))
 # 
-# # 3. 
-week_outcome_summary <- ebola_df %>%
-  group_by(onsetDate, outcome) %>%
+# 3. 
+week_sex_summary <- ebola_df %>%
+  group_by(onsetDate, sex) %>%
   summarise(n_outcome = n()) %>%
-  ungroup() # %>%
-#   complete(week = 1:52, outcome,  fill = (list(n_outcome = 0))) %>%
-#   group_by(outcome) %>%
-#   mutate(cum_cases = cumsum(n_outcome))
+  ungroup() 
+
+# 4. 
+gender_summary <- ebola_df %>%
+  tabyl(sex) %>%
+  adorn_pct_formatting()
 
 ```
 
@@ -195,27 +197,27 @@ Overall, in the first two months of the epidemic case counts remained under four
 <br>
  
 ```{r epicurve_outcome}
-curve_outcome <- week_outcome_summary %>%
-  ggplot(aes(x = onsetDate, fill = outcome)) +
+curve_sex <- week_sex_summary %>%
+  ggplot(aes(x = onsetDate, fill = sex)) +
   stat_bin(binwidth = 7, color = "white") +
   scale_x_date(breaks = date_breaks("1 month"), labels = date_format("%b %y")) +
   scale_fill_grey() +
   labs(x = "Date",
        y = "Number of Cases",
-       fill = "Outcome") +
+       fill = "Gender") +
   theme_bw() 
 
 
-curve_outcome
+curve_sex
 ```
 
 <br>
 
-**Figure 2: Weekly incidence by case outcome**
+**Figure 2: Weekly incidence by case's gender**
 
 <br>
 
-Early on in the epidemic, a large proportion of the cases seem to die, while later in the epidemic more cases appear to be recovered or still ill. 
+The vast majority of cases, overall, are female (n = `r gender_summary$n[1]`, `r gender_summary$percent[1]`). According to Figure 2, this pattern does not appear to change over the course of the epidemic. 
 
 <br>
 
@@ -229,36 +231,48 @@ Early on in the epidemic, a large proportion of the cases seem to die, while lat
 # 2. Counts the deaths by case definition
 # 3. Calculates the case fatality ratio by case definition
 
+
 cases <- ebola_df %>%
- count(status)
-  
+  tabyl(status, sex) %>%
+  adorn_totals("col") 
+
 cases
 
+
 deaths <- ebola_df %>%
-  count(status, outcome, name = "n_deaths") %>%
-  filter(outcome == "Died") %>%
-  select(-outcome)
-  
-deaths
+  tabyl(status, sex, outcome) %>%
+  adorn_totals("col")
+
+deaths <- deaths$Died
 
 cfrs <- cases %>%
-  left_join(deaths, by = "status") %>%
-  mutate(cfr = format(round((n_deaths / n) * 100, 1), nsmall = 1)) 
+  left_join(deaths, by = "status", suffix = c("_cases", "_deaths")) %>%
+  mutate(cfr_female = format(round((Female_deaths / Female_cases) * 100, 1), nsmall = 1),
+         cfr_male = format(round((Male_deaths / Male_cases) * 100, 1), nsmall = 1),
+         cfr_total = format(round((Total_deaths / Total_cases) * 100, 1), nsmall = 1)) 
 
-overall_deaths <- sum(deaths$n_deaths) 
-overall_cf <- overall_cf <- round((overall_deaths / total_cases) * 100, 1)
+overall_deaths <- sum(deaths$Total) 
+overall_cf <- round((overall_deaths / total_cases) * 100, 1)
 ```
 
 ```{r cfr_table}
 
 cfrs %>%
   htmlTable(ctable = TRUE,
+            cgroup = c("", "Cases", "Deaths", "Case Fatality Ratios (%)"),
+            n.cgroup = c(1, 3, 3, 3),
             header = c("&nbsp;&nbsp; Case Definition &nbsp;&nbsp;", 
-                       "&nbsp;&nbsp; Cases &nbsp;&nbsp;", 
-                       "&nbsp;&nbsp; Deaths &nbsp;&nbsp;", 
-                       "&nbsp;&nbsp; Case Fatality Ratio (%) &nbsp;&nbsp;"),
+                       "&nbsp;&nbsp; Female &nbsp;&nbsp;", 
+                       "&nbsp;&nbsp; Male &nbsp;&nbsp;", 
+                       "&nbsp;&nbsp; Total &nbsp;&nbsp;",
+                       "&nbsp;&nbsp; Female &nbsp;&nbsp;", 
+                       "&nbsp;&nbsp; Male &nbsp;&nbsp;", 
+                       "&nbsp;&nbsp; Total &nbsp;&nbsp;",
+                       "&nbsp;&nbsp; Female &nbsp;&nbsp;", 
+                       "&nbsp;&nbsp; Male &nbsp;&nbsp;", 
+                       "&nbsp;&nbsp; Total &nbsp;&nbsp;"),
             rnames = FALSE,
-            caption = "<b>Case Fatality Ratios (CFR) by case definition<b>",
+            caption = "<b>Case Fatality Ratios (CFR) by case definition and gender<b>",
             align = "l|rrr",
             css.cell = "padding-left: .5em; padding-right: .5em;")
 
