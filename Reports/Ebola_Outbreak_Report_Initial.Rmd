@@ -8,6 +8,19 @@ output:
     theme: lumen
     toc: yes
     toc_depth: 5
+references:
+- id: whoresponseteam
+  title: Ebola Virus Disease in West Africa — The first 9 Months of the Epidemic and Forward Projections
+  author: 
+  - family: WHO Ebola Response Team
+  volume: 371
+  issue: 16
+  page: 1481-1495
+  type: article-journal
+  publisher: New England Journal of Medicine
+  issued:
+    year: 2014
+    month: 10
 ---
 
 ```{r setup, include = FALSE}
@@ -37,8 +50,10 @@ updatedf <- paste0(cdata, "/Updated_ebola.rda")
 # Loading dependencies
 # ====================
 library(R0)
+library(incidence)
 library(tidyverse)
 library(lubridate)
+library(scales)
 library(janitor)
 library(htmlTable)
 
@@ -65,14 +80,14 @@ count_status <- ebola_df %>%
 
 ```
 
-This report contains information about the baseline EVD situation in Uganda. The results from this report are based upon the best information that is currently available. As more data is collected, the report will be updated. Over a period of three months, from `r earliest_date` to `r latest_date`, there have been `r total_cases` reported cases of EVD from a community of 400 people.  Of the `r total_cases` reported cases, `r count_status$n[1]` were confirmed, `r count_status$n[2]` were probable,  and `r count_status$n[3]` suspected. 
+This report contains information about the baseline EVD situation in Uganda. The results from this report are based upon the best information that is currently available. As more data is collected, the report will be updated. Over a period of five months, from `r earliest_date` to `r latest_date`, there have been `r total_cases` reported cases of EVD from a community of 400 people.  Of the `r total_cases` reported cases, `r count_status$n[1]` were confirmed, `r count_status$n[2]` were probable,  and `r count_status$n[3]` suspected. 
 
 <br>
 
 # **Visualisation and summary statistics**
 <br>
 
-The following figures show the weekly incidence over the 2019 calendar year. 
+The following figures show the weekly incidence over the 2019 calendar year. The incidence is presented by both case definition and the outcome of the case (recovered / died). The different case types are definied in the following way, according to the @whoresponseteam: "A suspected case is illness in any person, alive or dead, who has (or had) sudden onset of high fever and had contact with a person with a suspected, probable, or confirmed Ebola case or with a dead or sick animal; any person with sudden onset of high fever and at least three of the following symptoms: headache, vomiting, anorexia or loss of appetite, diarrhea, lethargy, stomach pain, aching muscles or joints, difficulty swallowing, breathing difficulties, or hiccupping; or any person who had unexplained bleeding or who died suddenly from an unexplained cause. A probable case is illness in any person suspected to have EVD who was evaluated by a clinician or any person who died from suspected Ebola and had an epidemiologic link to a person with a confirmed case but was not tested and did not have laboratory confirmation of the disease. A probable or suspected case was classified as confirmed when a sample from the person was positive for Ebola virus in laboratory testing." (p. 1486)
 
 <br>
 <br>
@@ -90,31 +105,31 @@ The following figures show the weekly incidence over the 2019 calendar year.
 # 3. The number of rows for each isoweek and outcome combination
 
 # 1.
-week_summary <- ebola_df %>%
-  group_by(week) %>% # Group the dataset
-  summarise(n_total = n()) %>% # Total number of rows for each week 
-  ungroup() %>% # Remove groupings from the summary datset
-  complete(week = 1:52, fill = list(n_total = 0)) %>%  # Turn implicit missing values into explicit missings
-  mutate(cum_cases = cumsum(n_total))
+# week_summary <- ebola_df %>%
+#   group_by(week) %>% # Group the dataset
+#   summarise(n_total = n()) %>% # Total number of rows for each week 
+#   ungroup() %>% # Remove groupings from the summary datset
+#   complete(week = 1:52, fill = list(n_total = 0)) %>%  # Turn implicit missing values into explicit missings
+#   mutate(cum_cases = cumsum(n_total))
 
   
-# 2. 
+# # 2. 
 week_status_summary <- ebola_df %>%
-  group_by(week, status) %>%
+  group_by(onsetDate, status) %>%
   summarise(n_status = n()) %>%
-  ungroup() %>%
-  complete(week = 1:52, status, fill = (list(n_status = 0))) %>%
-  group_by(status) %>%
-  mutate(cum_cases = cumsum(n_status))
-
-# 3. 
+  ungroup() # %>%
+#   complete(week = 1:52, status, fill = (list(n_status = 0))) %>%
+#   group_by(status) %>%
+#   mutate(cum_cases = cumsum(n_status))
+# 
+# # 3. 
 week_outcome_summary <- ebola_df %>%
-  group_by(week, outcome) %>%
+  group_by(onsetDate, outcome) %>%
   summarise(n_outcome = n()) %>%
-  ungroup() %>%
-  complete(week = 1:52, outcome,  fill = (list(n_outcome = 0))) %>%
-  group_by(outcome) %>%
-  mutate(cum_cases = cumsum(n_outcome))
+  ungroup() # %>%
+#   complete(week = 1:52, outcome,  fill = (list(n_outcome = 0))) %>%
+#   group_by(outcome) %>%
+#   mutate(cum_cases = cumsum(n_outcome))
 
 ```
 
@@ -154,43 +169,54 @@ week_outcome_summary <- ebola_df %>%
 ```{r epicurve_status}
 
 curve_status <- week_status_summary %>%
-  ggplot(aes(x = week)) +
-  geom_col(aes(y = n_status, fill = status)) +
-  labs(x = "Epidemiological Week 2019",
+  ggplot(aes(x = onsetDate, fill = status)) +
+  stat_bin(binwidth = 7, color = "white") +
+  scale_x_date(breaks = date_breaks("1 month"), labels = date_format("%b %y")) +
+  scale_fill_grey() +
+  labs(x = "Date",
        y = "Number of Cases",
        fill = "Case Definitions") +
-  scale_fill_viridis_d() +
   theme_bw() 
 
 curve_status
+
+
+
 ```
 
 <br>
 
-**Figure 2: The total number of reported cases by week of the year clustered by case definition**
+**Figure 1: Weekly incidence by case definition**
 
 <br>
-<br> 
 
+Overall, in the first two months of the epidemic case counts remained under four per week (Figure 1). From November, there was a marked increase in the number of new cases, with case counts peaking in mid-January. Thereafter, the number of cases fell to only three per week.The vast majority of cases are probable or confirmed with laboratory tests. In the most recent weeks, there are a few suspected cases because there has not been an opportunity for physicians to provide clinical diagnoses or lab confirmation yet. 
+
+<br>
  
 ```{r epicurve_outcome}
 curve_outcome <- week_outcome_summary %>%
-  ggplot(aes(x = week)) +
-  geom_col(aes(y = n_outcome, fill = outcome)) +
-  labs(x = "Epidemiological Week 2019",
+  ggplot(aes(x = onsetDate, fill = outcome)) +
+  stat_bin(binwidth = 7, color = "white") +
+  scale_x_date(breaks = date_breaks("1 month"), labels = date_format("%b %y")) +
+  scale_fill_grey() +
+  labs(x = "Date",
        y = "Number of Cases",
        fill = "Outcome") +
-  scale_fill_viridis_d() +
   theme_bw() 
+
 
 curve_outcome
 ```
 
 <br>
 
-**Figure 3: The total number of reported cases by week of the year clustered by case outcome**
+**Figure 2: Weekly incidence by case outcome**
 
 <br>
+
+Early on in the epidemic, a large proportion of the cases seem to die, while later in the epidemic more cases appear to be recovered or still ill. 
+
 <br>
 
 
@@ -256,7 +282,7 @@ members have already been exposed to infection.
 
 ```{r epi_analysis1}
 # - Fitting the incidence curve
-library('incidence');library('ggplot2');library('magrittr')
+library('ggplot2');library('magrittr')
 ebola.incidence=incidence(ebola_df$onsetDate,interval = 'weeks',standard = F)
 # Fitting
 ebola.incidence.fit=fit(ebola.incidence)
@@ -282,29 +308,29 @@ to double in size is `r signif(ebola.incidence.fit$info$doubling,3)` (`r signif(
 `r signif(ebola.incidence.fit$info$doubling.conf[2],3)`) days. 
 
 ```{r epi_analysis2}
-# - Compute Ro and R(t)
-
-weeks.strt=seq(1,98,7)
-weeks.end=seq(7,98,7)
-week.date=seq(min(ebola_df$onsetDate),max(ebola_df$onsetDate),7)
-
-# Ro
-ebola.GT<-generation.time("gamma", c(15.3,9.3))
-temp=table(ebola_df$onsetDate)
-ebola.inc=as.numeric(temp);names(ebola.inc)=names(temp);rm(temp)
-estR0<-estimate.R(ebola.inc, ebola.GT,methods=c("EG"))
-# R(t)
-estRt<-estimate.R(ebola.inc, ebola.GT,methods=c("TD"),begin=1, end=98, nsim=100)
-estRt.weekly <-smooth.Rt(estRt$estimates$TD, 7)
-
-plot.estRt.weekly=data.frame(date=week.date,
-                             est=estRt.weekly$R,lwr=estRt.weekly$conf.int[,1],
-                             upr=estRt.weekly$conf.int[,2])
-ggplot(plot.estRt.weekly,aes(x = date,y = est)) + geom_line(size=1) +
-  labs(title='Estimated weekly reproductive number and confidence intervals',x="Time",y = "R(t)") + my_theme + 
-geom_line(aes(x= date,y = lwr), color = "red", linetype = "dotted",size=1) +
-  geom_line(aes(x= date,y = upr), color = "red", linetype = "dotted",size=1) +
-  geom_hline(yintercept=1, linetype="dashed", color = "grey", size=1)
+# # - Compute Ro and R(t)
+# 
+# weeks.strt=seq(1,98,7)
+# weeks.end=seq(7,98,7)
+# week.date=seq(min(ebola_df$onsetDate),max(ebola_df$onsetDate),7)
+# 
+# # Ro
+# ebola.GT<-generation.time("gamma", c(15.3,9.3))
+# temp=table(ebola_df$onsetDate)
+# ebola.inc=as.numeric(temp);names(ebola.inc)=names(temp);rm(temp)
+# estR0<-estimate.R(ebola.inc, ebola.GT,methods=c("EG"))
+# # R(t)
+# estRt<-estimate.R(ebola.inc, ebola.GT,methods=c("TD"),begin=1, end=98, nsim=100)
+# estRt.weekly <-smooth.Rt(estRt$estimates$TD, 7)
+# 
+# plot.estRt.weekly=data.frame(date=week.date,
+#                              est=estRt.weekly$R,lwr=estRt.weekly$conf.int[,1],
+#                              upr=estRt.weekly$conf.int[,2])
+# ggplot(plot.estRt.weekly,aes(x = date,y = est)) + geom_line(size=1) +
+#   labs(title='Estimated weekly reproductive number and confidence intervals',x="Time",y = "R(t)") + my_theme + 
+# geom_line(aes(x= date,y = lwr), color = "red", linetype = "dotted",size=1) +
+#   geom_line(aes(x= date,y = upr), color = "red", linetype = "dotted",size=1) +
+#   geom_hline(yintercept=1, linetype="dashed", color = "grey", size=1)
 
 ```
 <br>
@@ -317,9 +343,8 @@ dashed grey line shows 1.
 
 The reproductive number over time shown in the previous figure is consistently estimated 
 to be above 1 up until the last week. However, this dip in the last week should be interpreted
-with caution as the confidence interval is very wide. The basic reproductive number
-was estimated at `r signif(estR0$estimates$EG$R,3)`(`r signif(estR0$estimates$EG$conf.int[1],3)`,
-`r signif(estR0$estimates$EG$conf.int[2],3)`)
+with caution as the confidence interval is very wide. The basic reproductive number [INSERT NEW CODE HERE]
+
 <br>
 <br>
 
@@ -331,18 +356,18 @@ average weekly waiting time is plotted against epidemic week in the figure below
 <br>
 <br>
 ```{r epi_analysis3}
-# - Time between onset and reporting
-waiting.period=data.frame(day=as.numeric(ebola_df$reportDate-min(ebola_df$reportDate)+1),
-                          wait=as.numeric(ebola_df$reportDate-ebola_df$onsetDate))
-# Average weekly waiting period
-weekly.waiting.period=data.frame(start=week.date,ave.wait=0)
-for(w in 1:length(week.date)){
-  x=which((waiting.period$day>=weeks.strt[w]) & (waiting.period$day<=weeks.end[w]))
-  weekly.waiting.period$ave.wait[w]=sum(waiting.period$wait[x])/length(x)
-}
-ggplot(weekly.waiting.period,aes(x = start,y = ave.wait)) + geom_line() +
-  labs(title='Average weekly waiting period between onset and reporting',x="Time", 
-       y = "Average waiting period in days") + my_theme
+# # - Time between onset and reporting
+# waiting.period=data.frame(day=as.numeric(ebola_df$reportDate-min(ebola_df$reportDate)+1),
+#                           wait=as.numeric(ebola_df$reportDate-ebola_df$onsetDate))
+# # Average weekly waiting period
+# weekly.waiting.period=data.frame(start=week.date,ave.wait=0)
+# for(w in 1:length(week.date)){
+#   x=which((waiting.period$day>=weeks.strt[w]) & (waiting.period$day<=weeks.end[w]))
+#   weekly.waiting.period$ave.wait[w]=sum(waiting.period$wait[x])/length(x)
+# }
+# ggplot(weekly.waiting.period,aes(x = start,y = ave.wait)) + geom_line() +
+#   labs(title='Average weekly waiting period between onset and reporting',x="Time", 
+#        y = "Average waiting period in days") + my_theme
 
 ```
 <br>
@@ -357,3 +382,4 @@ behavioural dynamics.
 <br>
 <br>
 
+# **References**
