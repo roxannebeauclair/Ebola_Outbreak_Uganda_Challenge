@@ -12,7 +12,8 @@ wd <- getwd()
 rdata <- paste0(wd, "/Data/Raw") 
 cdata <- paste0(wd, "/Data/Cleaned")
 
-data <- paste0(rdata, "/ebola_6.csv")
+data <- paste0(rdata, "/ebola_6_update.csv")
+data2 <- paste0(rdata, "/ebola_6_hhSize.csv")
 updatedf <- paste0(cdata, "/Updated_ebola.rda")
 
 
@@ -21,6 +22,7 @@ updatedf <- paste0(cdata, "/Updated_ebola.rda")
 # ====================
 
 library(tidyverse)
+library(lubridate)
 
 
 # ===========
@@ -28,29 +30,38 @@ library(tidyverse)
 # ===========
 
 ebola_df <- read_csv(file = data)
+ebola_hh_df <- read_csv(file = data2)
 
+# ========================================
+# Join household size data to main dataset
+# ========================================
+
+ebola_df1 <- ebola_df %>%
+  left_join(ebola_hh_df, by = c("householdID" = "hhID")) %>%
+  select(-X1)
 
 # ==============
 # Check dataset
 # =============
 
-glimpse(ebola_df)
+glimpse(ebola_df1)
 
 # ====================
 # Create new variables
 # ====================
 
-ebola_df1 <- ebola_df %>%
+ebola_df2 <- ebola_df1 %>%
   mutate(week = isoweek(onsetDate),
          outcome = factor(ifelse(is.na(deathDate), 
                                  "Recovered",
                                  "Died")),
-         status = str_to_title(status)) # Capitalize first letter
+         status = str_to_title(status),
+         sex = str_to_title(sex)) # Capitalize first letter
 
 # ==============
 # Save dataset
 # ==============
-ebola_df <- ebola_df1
+ebola_df <- ebola_df2
 
 save(ebola_df, file = updatedf)
 
@@ -58,6 +69,8 @@ save(ebola_df, file = updatedf)
 # Remove libraries 
 # ================
 rm(list = ls())
+detach(package: lubridate)
 detach(package: tidyverse)
+
 
 
