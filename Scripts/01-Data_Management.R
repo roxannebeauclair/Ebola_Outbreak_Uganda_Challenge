@@ -56,7 +56,9 @@ ebola_df2 <- ebola_df1 %>%
                                  "Recovered",
                                  "Died")),
          status = str_to_title(status),
-         sex = str_to_title(sex)) # Capitalize first letter
+         sex = str_to_title(sex)) %>% # Capitalize first letter
+  group_by(householdID) %>%
+  mutate(n_cases_hh = n())
 
 # ==============
 # Save dataset
