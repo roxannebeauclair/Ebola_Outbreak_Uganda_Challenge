@@ -64,9 +64,8 @@ library(htmlTable)
 load(updatedf)
 ```
 
-# **Overview**
+# **Situation Update**
 
-<br>
 <br>
 
 ```{r hightlights_setup, include = FALSE}
@@ -84,15 +83,7 @@ This report contains information about the baseline EVD situation in Uganda. The
 
 <br>
 
-# **Visualisation and summary statistics**
-<br>
-
-The following figures show the weekly incidence over the 2019 calendar year. The incidence is presented by both case definition and the outcome of the case (recovered / died). The different case types are definied in the following way, according to the @whoresponseteam: "A suspected case is illness in any person, alive or dead, who has (or had) sudden onset of high fever and had contact with a person with a suspected, probable, or confirmed Ebola case or with a dead or sick animal; any person with sudden onset of high fever and at least three of the following symptoms: headache, vomiting, anorexia or loss of appetite, diarrhea, lethargy, stomach pain, aching muscles or joints, difficulty swallowing, breathing difficulties, or hiccupping; or any person who had unexplained bleeding or who died suddenly from an unexplained cause. A probable case is illness in any person suspected to have EVD who was evaluated by a clinician or any person who died from suspected Ebola and had an epidemiologic link to a person with a confirmed case but was not tested and did not have laboratory confirmation of the disease. A probable or suspected case was classified as confirmed when a sample from the person was positive for Ebola virus in laboratory testing." (p. 1486)
-
-<br>
-<br>
-
-##  Epidemiologic Curves
+The following figures show the weekly incidence over the 2019 calendar year. The incidence is presented by both case definition and the gender of the case. The different case types are definied in the following way, according to the @whoresponseteam: "A suspected case is illness in any person, alive or dead, who has (or had) sudden onset of high fever and had contact with a person with a suspected, probable, or confirmed Ebola case or with a dead or sick animal; any person with sudden onset of high fever and at least three of the following symptoms: headache, vomiting, anorexia or loss of appetite, diarrhea, lethargy, stomach pain, aching muscles or joints, difficulty swallowing, breathing difficulties, or hiccupping; or any person who had unexplained bleeding or who died suddenly from an unexplained cause. A probable case is illness in any person suspected to have EVD who was evaluated by a clinician or any person who died from suspected Ebola and had an epidemiologic link to a person with a confirmed case but was not tested and did not have laboratory confirmation of the disease. A probable or suspected case was classified as confirmed when a sample from the person was positive for Ebola virus in laboratory testing." (p. 1486)
 
 <br>
 <br>
@@ -135,7 +126,6 @@ gender_summary <- ebola_df %>%
 
 ```
 
-<br>
 
 ```{r epicurve_overall}
 
@@ -192,7 +182,7 @@ curve_status
 
 <br>
 
-Overall, in the first two months of the epidemic case counts remained under four per week (Figure 1). From November, there was a marked increase in the number of new cases, with case counts peaking in mid-January. Thereafter, the number of cases fell to only three per week.The vast majority of cases are probable or confirmed with laboratory tests. In the most recent weeks, there are a few suspected cases because there has not been an opportunity for physicians to provide clinical diagnoses or lab confirmation yet. 
+Overall, in the first two months of the epidemic case counts remained under four per week (Figure 1). From November, there was a marked increase in the number of new cases, with case counts peaking in mid-January. Thereafter, the number of cases fell to only three per week. The vast majority of cases are probable or confirmed. In the most recent weeks, there were a few suspected cases because there has not been an opportunity for physicians to provide clinical diagnoses or lab confirmation yet. 
 
 <br>
  
@@ -221,8 +211,6 @@ The vast majority of cases, overall, are female (n = `r gender_summary$n[1]`, `r
 
 <br>
 
-
-## Case Fatality 
  
 ```{r cfr_setup, include = FALSE}
 
@@ -280,11 +268,24 @@ cfrs %>%
 
 <br>
 
-Overall, there were  `r overall_deaths` (`r overall_cf` %) deaths in the population. Table 1 presents CFRs by case definition and gender. Cases that were classified as probable had the highest CRF, with 100% of cases dying. The CFR for confirmed cases was `r cfrs$cfr_total[1]`%, while the CFR for suspected cases was `r cfrs$cfr_total[3]`%. All suspected cases happened in the previous three weeks and thus they were probably still ill rather than fully recovered. The CFRs disagreggated by gender do not look much different from the overall CFRs. 
+Overall, there were  `r overall_deaths` (`r overall_cf` %) deaths in the population. Table 1 presents CFRs by case definition and gender. Cases that were classified as probable had the highest CRF, with 100% of cases dying. The CFR for confirmed cases was `r cfrs$cfr_total[1]`%, while the CFR for suspected cases was `r cfrs$cfr_total[3]`%. All suspected cases happened in the previous three weeks and thus they were probably still ill rather than fully recovered. The CFRs disagreggated by gender appear to be similar to the overall CFRs. 
 
 <br>
 
-## Growth Curve and Basic Reproduction Number
+
+```{r hh_size_setup, include = FALSE}
+
+hhsize_summary <- ebola_df %>%
+  summarise(mean_hhsize = round(mean(size, na.rm = T), 2),
+            mean_hh_cases = round(mean(n_cases_hh, na.rm = T), 2),
+            mean_hh_prop_infected = round(mean(prop_hh_infected, na.rm = T), 2))
+
+```
+
+Among cases, the average number of persons living in their households was `r hhsize_summary$mean_hhsize`. On average, there were `r hhsize_summary$mean_hh_cases` cases per household, and thus approximately `r hhsize_summary$mean_hh_prop_infected * 100`% of households were affected.
+
+<br>
+
 An exponential growth curve was fitted to the weekly incidence data and estimates
 of the reproductive number were derived. The basic reproductive number, denoted Ro, is a measure
 of the infectivity of a single case in a completely susceptible population and it
@@ -311,7 +312,7 @@ plot(ebola.incidence, ylab='Weekly incidence',border = "white") %>%
 
 <br>
 
-**Figure 7: Weekly incidence over the 3-month reporting period.** The grey bars show the reported
+**Figure 3: Weekly incidence over the 3-month reporting period.** The grey bars show the reported
 data while the lines show the model predictions and 95% confidence intervals(dashed lines)
 
 <br>
@@ -349,7 +350,7 @@ to double in size is `r signif(ebola.incidence.fit$info$doubling,3)` (`r signif(
 ```
 <br>
 
-**Figure 8: Estimates of the weekly reproductive number over time.** The black line shows the 
+**Figure 4: Estimates of the weekly reproductive number over time.** The black line shows the 
 median estimate while the dotted red lines show the 95% confidence interval. The 
 dashed grey line shows 1.
 
@@ -362,13 +363,13 @@ with caution as the confidence interval is very wide. The basic reproductive num
 <br>
 <br>
 
-## Waiting time between symptom onset and case reporting
-<br>
+
 The time between when symptoms begin and when a case is reported might change as 
 the outbreak progresses, which might be an indicator of community awareness. The
 average weekly waiting time is plotted against epidemic week in the figure below.
 <br>
 <br>
+
 ```{r epi_analysis3}
 # # - Time between onset and reporting
 # waiting.period=data.frame(day=as.numeric(ebola_df$reportDate-min(ebola_df$reportDate)+1),
@@ -384,8 +385,9 @@ average weekly waiting time is plotted against epidemic week in the figure below
 #        y = "Average waiting period in days") + my_theme
 
 ```
+
 <br>
-**Figure 9: Average weekly waiting time.**
+**Figure 5: Average weekly waiting time.**
 <br>
 <br>
 The time it takes for a case to be reported given symptom onset does not seem to 
@@ -395,5 +397,12 @@ behavioural dynamics.
 
 <br>
 <br>
+
+# **Actions to Date and Conclusions**
+
+1. On the ground efforts to do contact tracing and diagnosis are successful since few cases are only "suspected", and the incidence seems to be declining. 
+2. Still nearly three-quarters of cases are dying, so possibly treatment needs to be better managed?
+3. Over half of households become infected -- need to screen within households get vaccines to household members after first person infected.
+4. Women seem to be particularly at risk of becoming infected, though not necessarily dying.
 
 # **References**
