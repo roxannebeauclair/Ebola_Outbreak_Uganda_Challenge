@@ -22,7 +22,6 @@ references:
     year: 2014
     month: 10
 ---
-
 ```{r setup, include = FALSE}
 # ============
 # Set options
@@ -39,7 +38,7 @@ options(table_counter_str = "<b>Table %s:</b> ")
 # File paths
 # ===================
 wd <- "/Users/roxannebeauclair/Dropbox/Work/Work for SACEMA-Juliet/Rapid Response Team/Challenge Assignment/Analysis"
-# wd <- "../../../GitHub/Ebola_Outbreak_Uganda_Challenge/"
+wd <- "../../../GitHub/Ebola_Outbreak_Uganda_Challenge/"
 rdata <- paste0(wd, "/Data/Raw") 
 cdata <- paste0(wd, "/Data/Cleaned")
 
@@ -49,14 +48,13 @@ updatedf <- paste0(cdata, "/Updated_ebola.rda")
 # ====================
 # Loading dependencies
 # ====================
-library(R0)
 library(incidence)
 library(tidyverse)
 library(lubridate)
 library(scales)
 library(janitor)
 library(htmlTable)
-
+library(EpiEstim)
 
 # =============
 # Load datasets
@@ -270,9 +268,6 @@ cfrs %>%
 
 Overall, there were  `r overall_deaths` (`r overall_cf` %) deaths in the population. Table 1 presents CFRs by case definition and gender. Cases that were classified as probable had the highest CRF, with 100% of cases dying. The CFR for confirmed cases was `r cfrs$cfr_total[1]`%, while the CFR for suspected cases was `r cfrs$cfr_total[3]`%. All suspected cases happened in the previous three weeks and thus they were probably still ill rather than fully recovered. The CFRs disagreggated by gender appear to be similar to the overall CFRs. 
 
-<br>
-
-
 ```{r hh_size_setup, include = FALSE}
 
 hhsize_summary <- ebola_df %>%
@@ -282,127 +277,127 @@ hhsize_summary <- ebola_df %>%
 
 ```
 
-Among cases, the average number of persons living in their households was `r hhsize_summary$mean_hhsize`. On average, there were `r hhsize_summary$mean_hh_cases` cases per household, and thus approximately `r hhsize_summary$mean_hh_prop_infected * 100`% of households were affected.
-
 <br>
-
-An exponential growth curve was fitted to the weekly incidence data and estimates
-of the reproductive number were derived. The basic reproductive number, denoted Ro, is a measure
-of the infectivity of a single case in a completely susceptible population and it
-can be used to predict if an outbreak will occur. The reproductive number, denoted 
-R(t) is a measure of infectivity of a single case in a population where some
-members have already been exposed to infection. 
-
-<br>
-
-```{r epi_analysis1}
-# - Fitting the incidence curve
-library('ggplot2');library('magrittr')
-ebola.incidence=incidence(ebola_df$onsetDate,interval = 'weeks',standard = F)
-# Fitting
-ebola.incidence.fit=fit(ebola.incidence)
-my_theme <- theme_bw(base_size = 12) +
-  theme(panel.grid.minor = element_blank()) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, color = "black"))
-plot(ebola.incidence, ylab='Weekly incidence',border = "white") %>% 
-  add_incidence_fit(ebola.incidence.fit) +
-  labs(title='Weekly incidence from data and model fit') + 
-  my_theme
-```
-
-<br>
-
-**Figure 3: Weekly incidence over the 3-month reporting period.** The grey bars show the reported
-data while the lines show the model predictions and 95% confidence intervals(dashed lines)
-
-<br>
-
-The estimated daily growth rate is `r ebola.incidence.fit$info$r` (`r ebola.incidence.fit$info$r.conf[1]`, 
-`r ebola.incidence.fit$info$r.conf[2]`). The stimated time it would take for the epidemic
-to double in size is `r signif(ebola.incidence.fit$info$doubling,3)` (`r signif(ebola.incidence.fit$info$doubling.conf[1],3)`, 
-`r signif(ebola.incidence.fit$info$doubling.conf[2],3)`) days. 
-
-```{r epi_analysis2}
-# # - Compute Ro and R(t)
-# 
-# weeks.strt=seq(1,98,7)
-# weeks.end=seq(7,98,7)
-# week.date=seq(min(ebola_df$onsetDate),max(ebola_df$onsetDate),7)
-# 
-# # Ro
-# ebola.GT<-generation.time("gamma", c(15.3,9.3))
-# temp=table(ebola_df$onsetDate)
-# ebola.inc=as.numeric(temp);names(ebola.inc)=names(temp);rm(temp)
-# estR0<-estimate.R(ebola.inc, ebola.GT,methods=c("EG"))
-# # R(t)
-# estRt<-estimate.R(ebola.inc, ebola.GT,methods=c("TD"),begin=1, end=98, nsim=100)
-# estRt.weekly <-smooth.Rt(estRt$estimates$TD, 7)
-# 
-# plot.estRt.weekly=data.frame(date=week.date,
-#                              est=estRt.weekly$R,lwr=estRt.weekly$conf.int[,1],
-#                              upr=estRt.weekly$conf.int[,2])
-# ggplot(plot.estRt.weekly,aes(x = date,y = est)) + geom_line(size=1) +
-#   labs(title='Estimated weekly reproductive number and confidence intervals',x="Time",y = "R(t)") + my_theme + 
-# geom_line(aes(x= date,y = lwr), color = "red", linetype = "dotted",size=1) +
-#   geom_line(aes(x= date,y = upr), color = "red", linetype = "dotted",size=1) +
-#   geom_hline(yintercept=1, linetype="dashed", color = "grey", size=1)
-
-```
-<br>
-
-**Figure 4: Estimates of the weekly reproductive number over time.** The black line shows the 
-median estimate while the dotted red lines show the 95% confidence interval. The 
-dashed grey line shows 1.
-
-<br>
-
-The reproductive number over time shown in the previous figure is consistently estimated 
-to be above 1 up until the last week. However, this dip in the last week should be interpreted
-with caution as the confidence interval is very wide. The basic reproductive number [INSERT NEW CODE HERE]
-
-<br>
-<br>
-
 
 The time between when symptoms begin and when a case is reported might change as 
 the outbreak progresses, which might be an indicator of community awareness. The
-average weekly waiting time is plotted against epidemic week in the figure below.
+trends over time in reporting delay are shown in the figure below.
 <br>
 <br>
 
-```{r epi_analysis3}
-# # - Time between onset and reporting
-# waiting.period=data.frame(day=as.numeric(ebola_df$reportDate-min(ebola_df$reportDate)+1),
-#                           wait=as.numeric(ebola_df$reportDate-ebola_df$onsetDate))
-# # Average weekly waiting period
-# weekly.waiting.period=data.frame(start=week.date,ave.wait=0)
-# for(w in 1:length(week.date)){
-#   x=which((waiting.period$day>=weeks.strt[w]) & (waiting.period$day<=weeks.end[w]))
-#   weekly.waiting.period$ave.wait[w]=sum(waiting.period$wait[x])/length(x)
-# }
-# ggplot(weekly.waiting.period,aes(x = start,y = ave.wait)) + geom_line() +
-#   labs(title='Average weekly waiting period between onset and reporting',x="Time", 
-#        y = "Average waiting period in days") + my_theme
+```{r epi_analysis1}
+# Data and Loess regression on the waiting time between onset and reporting
+waiting.period=data.frame(day=as.numeric(ebola_df$reportDate-min(ebola_df$reportDate)+1),
+                          wait=as.numeric(ebola_df$reportDate-ebola_df$onsetDate),
+                          date=ebola_df$reportDate)
+waiting.period=waiting.period[order(waiting.period$day),]
+# loess smoothing of waiting period
+library(ggplot2)
+ggplot()+
+  geom_smooth(data=waiting.period, aes(x=date, y=wait), se =T,span=0.25) + 
+  geom_point(data=waiting.period, aes(x=date, y=wait)) +
+  labs(x = "Date of reporting",y = "Waiting period (days)")
+loess.wait <- loess(wait ~ day, data=waiting.period, span=0.25) # 10% smoothing span
+sum.dat=quantile(waiting.period$wait,c(0.025,0.5,0.975))
+sum.est=quantile(loess.wait$fitted,c(0.025,0.5,0.975))
 
 ```
 
 <br>
-**Figure 5: Average weekly waiting time.**
-<br>
-<br>
-The time it takes for a case to be reported given symptom onset does not seem to 
-change much over the course of the outbreak thus far. However, this could be dependent on
-the definition of symptoms, additional data would be need to better capture changing
-behavioural dynamics. 
+**Figure 3: Waiting time by date of reporting.** The waiting period for every case in the data is shown by the black dots. The blue curve shows the loess smoothed curve and the grey shedded regions show the error intervals.
 
 <br>
+
+The median waiting time in the data is `r sum.dat[2]`(`r sum.dat[1]`, `r sum.dat[3]`) days, while that estimated from the loess regression is `r signif(sum.est[2],2)`(`r signif(sum.est[1],2)`, `r signif(sum.est[3],2)`). The time it takes for a case to be reported given symptom onset does not seem to change much over the course of the outbreak thus far. However, the delay implies that the incidence curve drawn from reporting date has a time lag of about `r sum.dat[2]` days relative to the actual incidence. Any further interpretations of these data should bear this in mind.
+
+```{r epi_analysis2}
+# Household incidence rates
+# Number of HHs in the data
+hhs=unique(ebola_df$householdID)
+case.by.hh=data.frame(HH=unique(ebola_df$householdID),
+                      size=ebola_df$size[match(hhs,ebola_df$householdID)],
+                      no.cases=0)
+for(i in 1:length(case.by.hh$HH)) case.by.hh$no.cases[i]=sum(ebola_df$householdID==case.by.hh$HH[i])
+case.by.hh$prop.hh.inf=case.by.hh$no.cases/case.by.hh$size
+case.by.hh$incidence=0
+# identifying HH index cases and calculating HH incidence rate based on the
+# reported onset dates
+ebola.subset=data.frame(ebola_df[,c(2,3,5,6,7,8)]);ebola.subset$index=0
+for(h in 1:length(case.by.hh$HH)){
+  # all cases in the HH
+  xx=which(ebola.subset$householdID==case.by.hh$HH[h])
+  # index
+  ind.xx=which(ebola.subset$onsetDate[xx]==min(ebola.subset$onsetDate[xx]))
+  ebola.subset$index[xx[ind.xx]]=1
+  
+  if(length(xx)>1){
+    # time from on set in index to onset in all other HH cases
+    time.to.event=ebola.subset$onsetDate[xx[-ind.xx]]-ebola.subset$onsetDate[xx[ind.xx]]
+    # incidence rate
+    case.by.hh$incidence[h]=length(xx[-ind.xx])/sum(as.numeric(time.to.event))
+  }else{
+    case.by.hh$incidence[h]=0 
+  }
+}
+# index cases that lead to onward transmission
+ind.on=which(case.by.hh$incidence>0)
+hh.inc=case.by.hh$incidence[ind.on]
+hh.inc.q=signif(quantile(hh.inc,c(0.025,0.5,0.975)),3)
+hh.wait=signif(1/hh.inc.q,3)
+# Sex of index cases
+ind.sex=table(ebola.subset$sex[ebola.subset$index==1])
+
+```
+<br> 
+
+There were `r length(case.by.hh$HH)` households represented in the data with a median size of `r median(case.by.hh$size)` ( range: `r min(case.by.hh$size)`, `r max(case.by.hh$size)`). The proportion of the households that got infected was on average `r signif(median(case.by.hh$prop.hh.inf),3)`. In `r signif((sum(case.by.hh$incidence==0)/length(case.by.hh$HH))*100,3)`% of household introductions only a single member has so far been reported despite the occupancy of these households ranging from `r range(case.by.hh$size[-ind.on])[1]` to `r range(case.by.hh$size[-ind.on])[2]` members. The household incidence rate is defined as the number of secondary cases following a primary case per unit of person time during follow up. Here, the follow-up period for each secondary case is defined as the time from onset of the index case to onset of the secondary case.
+<br>
+ ***Incidence rate = Total number of secondary cases / Total person time of follow-up*** 
+<br>
+In the households that did have more than one case, the median incidence rate was `r hh.inc.q[2]`(`r hh.inc.q[1]`,`r hh.inc.q[3]`)/person/day. This means that from the onset in the first household case, it would take approximately `r hh.wait[2]` (`r hh.wait[3]`,`r hh.wait[1]`) days for a new case to appear. Taken together, the avarege waiting time between syptom onset and reporting, and the time between onset in a primary household case and onset in a secondary case imply that contact tracing efforts immediately following cases reporting would be a timely intervention. `r signif(max(ind.sex)/sum(ind.sex),3)*100`% of primary household cases were `r names(ind.sex)[which(ind.sex==max(ind.sex))]`. 
+
+<br>
+
+We used the daily incidence curve obtained using all the reported onsets in the data, regardless of case definition to estimate the instataneous reproductive number, *R(t)*, which is a measure of infectivity of a single case in a population where some members have already been exposed to infection. *R(t)* can be used to asses is the epidemic is on the rise or declining, where values below 1 imply a decline. We used the EpiEstim package in R which uses a combination of incidence data and a serial interval distribution. We assumed that EVD has a mean serial interval of 15.3(SD: 9.3) days [@whoresponseteam].  
+
+```{r epi_analysis3}
+# - Compute Ro and R(t)
+ebola=as.data.frame(table(ebola.subset$onsetDate))
+ebola.incidence=data.frame(dates=seq(min(ebola.subset$onsetDate),
+                                     max(ebola.subset$onsetDate),1),
+                           I=0)
+xx=which(ebola.incidence$dates %in% as.Date(ebola$Var1))
+ebola.incidence$I[xx]=ebola$Freq
+## to specify t_start and t_end in config, e.g. to have biweekly sliding
+## windows      
+t_start <- seq(30, nrow(ebola.incidence)-13)   
+t_end <- t_start + 13                 
+res <- estimate_R(incid = ebola.incidence, 
+                  method = "parametric_si",
+                  config = make_config(list(
+                    mean_si = 15.3, std_si = 9.3, t_start = t_start,t_end = t_end)))
+p_I <- plot(res, "incid") # plots the incidence
+p_Ri <- plot(res, "R",options_R = list(ylim = c(0, 4)))
+
+gridExtra::grid.arrange(p_I, p_Ri, ncol = 1)
+
+
+```
+<br>
+
+**Figure 4: The epidemic curve of daily incidence and estimates of the reproductive number over time.** Daily incidence curves are shown for all the data (confirmed, probable and suspected cases). The reproductive number was estimated starting from the second week. The plot shows at each day the estimate of the reproduction number over the 14-day window finishing on that day.
+
+<br>
+
+The reproductive number over time shown in the previous figure is consistently estimated to be above 1 up until the last 2 weeks. This dip in *R(t)* is reflecting the apparent dip in reported onsets. However, this should be interpreted with the reporting delays in mind, the last date of reported onsets is not reflective of the most recent infection events. 
+
 <br>
 
 # **Actions to Date and Conclusions**
 
 1. On the ground efforts to do contact tracing and diagnosis are successful since few cases are only "suspected", and the incidence seems to be declining. 
 2. Still nearly three-quarters of cases are dying, so possibly treatment needs to be better managed?
-3. Over half of households become infected -- need to screen within households get vaccines to household members after first person infected.
-4. Women seem to be particularly at risk of becoming infected, though not necessarily dying.
+3. There appears to be a significant incidenc of household infections implying the need to screen within households get vaccines to household members after first person infected.
+4. Women seem to be particularly at risk of becoming infected (and hence introducing infections into the household), though not necessarily dying.
 
 # **References**
