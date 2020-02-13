@@ -38,7 +38,7 @@ options(table_counter_str = "<b>Table %s:</b> ")
 # File paths
 # ===================
 #wd <- "/Users/roxannebeauclair/Dropbox/Work/Work for SACEMA-Juliet/Rapid Response Team/Challenge Assignment/Analysis"
-#wd <- "../../../GitHub/Ebola_Outbreak_Uganda_Challenge/"
+wd <- "../../../GitHub/Ebola_Outbreak_Uganda_Challenge/"
 rdata <- paste0(wd, "/Data/Raw") 
 cdata <- paste0(wd, "/Data/Cleaned")
 
@@ -281,7 +281,7 @@ hhsize_summary <- ebola_df %>%
 
 The time between when symptoms begin and when a case is reported might change as 
 the outbreak progresses, which might be an indicator of community awareness. The
-trends over time in reporting delay are shown in the figure below.
+trends over time in reporting delay are shown in Figure 3. 
 <br>
 <br>
 
@@ -307,7 +307,6 @@ sum.est=quantile(loess.wait$fitted,c(0.025,0.5,0.975))
 **Figure 3: Waiting time by date of reporting.** The waiting period for every case in the data is shown by the black dots. The blue curve shows the loess smoothed curve and the grey shedded regions show the error intervals.
 
 <br>
-
 The median waiting time in the data is `r sum.dat[2]`(`r sum.dat[1]`, `r sum.dat[3]`) days, while that estimated from the loess regression is `r signif(sum.est[2],2)`(`r signif(sum.est[1],2)`, `r signif(sum.est[3],2)`). The time it takes for a case to be reported given symptom onset does not seem to change much over the course of the outbreak thus far. However, the delay implies that the incidence curve drawn from reporting date has a time lag of about `r sum.dat[2]` days relative to the actual incidence. Any further interpretations of these data should bear this in mind.
 
 ```{r epi_analysis2}
@@ -354,7 +353,7 @@ There were `r length(case.by.hh$HH)` households represented in the data with a m
 <br>
  ***Incidence rate = Total number of secondary cases / Total person time of follow-up*** 
 <br>
-In the households that did have more than one case, the median incidence rate was `r hh.inc.q[2]`(`r hh.inc.q[1]`,`r hh.inc.q[3]`)/person/day. This means that from the onset in the first household case, it would take approximately `r hh.wait[2]` (`r hh.wait[3]`,`r hh.wait[1]`) days for a new case to appear. Taken together, the avarege waiting time between syptom onset and reporting, and the time between onset in a primary household case and onset in a secondary case imply that contact tracing efforts immediately following cases reporting would be a timely intervention. `r signif(max(ind.sex)/sum(ind.sex),3)*100`% of primary household cases were `r names(ind.sex)[which(ind.sex==max(ind.sex))]`. 
+In the households that did have more than one case, the median incidence rate was `r hh.inc.q[2]`(`r hh.inc.q[1]`,`r hh.inc.q[3]`)/person/day. This means that from the onset in the first household case, it would take approximately `r hh.wait[2]` (`r hh.wait[3]`,`r hh.wait[1]`) days for a new case to appear. Taken together, the average waiting time between symptom onset and reporting, and the time between onset in a primary household case and onset in a secondary case imply that contact tracing efforts immediately following cases reporting would be a timely intervention. `r signif(max(ind.sex)/sum(ind.sex),3)*100`% of primary household cases were `r names(ind.sex)[which(ind.sex==max(ind.sex))]`. 
 
 <br>
 
