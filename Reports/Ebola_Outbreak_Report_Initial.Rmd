@@ -37,8 +37,8 @@ options(table_counter_str = "<b>Table %s:</b> ")
 # ===================
 # File paths
 # ===================
-wd <- "/Users/roxannebeauclair/Dropbox/Work/Work for SACEMA-Juliet/Rapid Response Team/Challenge Assignment/Analysis"
-wd <- "../../../GitHub/Ebola_Outbreak_Uganda_Challenge/"
+#wd <- "/Users/roxannebeauclair/Dropbox/Work/Work for SACEMA-Juliet/Rapid Response Team/Challenge Assignment/Analysis"
+#wd <- "../../../GitHub/Ebola_Outbreak_Uganda_Challenge/"
 rdata <- paste0(wd, "/Data/Raw") 
 cdata <- paste0(wd, "/Data/Cleaned")
 
